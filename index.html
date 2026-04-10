@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLUX — Hand Fluid</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+
+    #camera-feed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1); /* mirror like a selfie */
+      display: none;
+      z-index: 0;
+    }
+
+    canvas {
+      display: block;
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      height: 100vh;
+      cursor: none;
+    }
+
+    /* When camera is visible, screen blend makes black canvas transparent */
+    canvas.camera-on {
+      mix-blend-mode: screen;
+    }
+
+    #toggle-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.85);
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      backdrop-filter: blur(8px);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    #toggle-btn.active {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    #overlay {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.35);
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      text-align: center;
+      z-index: 10;
+    }
+    #status {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      color: rgba(255, 255, 255, 0.3);
+      font-family: system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 1s;
+    }
+  </style>
+</head>
+<body>
+  <!-- Camera feed: hidden by default, shown behind canvas when toggled -->
+  <video id="camera-feed" autoplay playsinline muted></video>
+
+  <canvas id="c"></canvas>
+
+  <button id="toggle-btn">📷 Show Camera</button>
+  <div id="overlay">Move your hands to paint with light</div>
+  <div id="status">initializing…</div>
+
+  <!-- MediaPipe via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
