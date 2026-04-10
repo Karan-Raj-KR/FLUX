@@ -13,19 +13,16 @@ export class HandTracker {
     this._camera = null
   }
 
-  // videoEl: pass the visible <video> element from the DOM so main.js can show/hide it
-  async init(videoEl) {
-    if (videoEl) {
-      this._video = videoEl
-    } else {
-      // Fallback: create a hidden video if none provided
-      const video = document.createElement('video')
-      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
-      video.setAttribute('playsinline', '')
-      video.setAttribute('muted', '')
-      document.body.appendChild(video)
-      this._video = video
-    }
+  // displayVideoEl: optional visible <video> to mirror the stream into for the toggle UI
+  async init(displayVideoEl) {
+    // Always create a dedicated hidden video for MediaPipe — it's picky about its element
+    const video = document.createElement('video')
+    video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;'
+    video.setAttribute('playsinline', '')
+    video.setAttribute('muted', '')
+    document.body.appendChild(video)
+    this._video = video
+    this._displayVideo = displayVideoEl || null
 
     // Wait for MediaPipe globals
     await this._waitForMediaPipe()
@@ -55,6 +52,12 @@ export class HandTracker {
     })
     this._camera = camera
     await camera.start()
+
+    // Mirror the live stream to the display video so main.js can show/hide it
+    if (this._displayVideo && this._video.srcObject) {
+      this._displayVideo.srcObject = this._video.srcObject
+    }
+
     this._ready = true
   }
 
