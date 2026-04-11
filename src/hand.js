@@ -2,8 +2,9 @@
 // Loaded via CDN in index.html; window.Hands, window.Camera are globals
 
 export class HandTracker {
-  constructor({ onResults }) {
+  constructor({ onResults, onGesture }) {
     this._onResults = onResults
+    this._onGesture = onGesture || null
     this._prev = {} // map: handIndex -> { x, y }
     this._hues = [0, 200] // starting hues for each hand
     this._hueSpeed = 40  // degrees per second
@@ -11,6 +12,8 @@ export class HandTracker {
     this._ready = false
     this._video = null
     this._camera = null
+    this._clearGestureStart = null
+    this._clearGestureFired = false
   }
 
   // displayVideoEl: optional visible <video> to mirror the stream into for the toggle UI
@@ -90,8 +93,8 @@ export class HandTracker {
     }
 
     results.multiHandLandmarks.forEach((landmarks, idx) => {
-      // We use index finger tip (8) and middle finger tip (12)
-      const tips = [landmarks[8], landmarks[12]]
+      // Index fingertip only (landmark 8)
+      const tips = [landmarks[8]]
 
       tips.forEach((lm, tipIdx) => {
         const handKey = `${idx}_${tipIdx}`
@@ -115,7 +118,7 @@ export class HandTracker {
         // Force proportional to speed, with ambient minimum
         const force = Math.max(speed * 0.08, 0.004)
 
-        splats.push({ x, y, dx: vx * 0.15, dy: vy * 0.15, color, force })
+        splats.push({ sourceId: handKey, x, y, dx: vx * 0.15, dy: vy * 0.15, color, force })
       })
     })
 
@@ -124,14 +127,46 @@ export class HandTracker {
     if (results.multiHandLandmarks) {
       results.multiHandLandmarks.forEach((_, idx) => {
         activeKeys.add(`${idx}_0`)
-        activeKeys.add(`${idx}_1`)
       })
     }
     for (const k of Object.keys(this._prev)) {
       if (!activeKeys.has(k)) delete this._prev[k]
     }
 
+    // ── Clear gesture: all 10 fingers extended for 500 ms ────────
+    if (this._onGesture) {
+      const hands = results.multiHandLandmarks
+      const allOpen = hands && hands.length === 2 &&
+        hands.every(lm => this._allFingersExtended(lm))
+
+      if (allOpen) {
+        if (this._clearGestureStart === null) {
+          this._clearGestureStart = now
+          this._clearGestureFired = false
+        } else if (!this._clearGestureFired && now - this._clearGestureStart >= 500) {
+          this._onGesture({ type: 'clear' })
+          this._clearGestureFired = true
+        }
+      } else {
+        this._clearGestureStart = null
+        this._clearGestureFired = false
+      }
+    }
+
     this._onResults(splats)
+  }
+
+  // Returns true when all 5 fingers are visibly extended on a hand.
+  // Uses MediaPipe's coordinate system where y=0 is the top of the frame.
+  _allFingersExtended(lm) {
+    const up = (tip, pip) => lm[tip].y < lm[pip].y
+    return (
+      up(8,  6)  &&  // index
+      up(12, 10) &&  // middle
+      up(16, 14) &&  // ring
+      up(20, 18) &&  // pinky
+      lm[4].y < lm[3].y  // thumb tip above IP joint
+    )
   }
 
   isReady() { return this._ready }

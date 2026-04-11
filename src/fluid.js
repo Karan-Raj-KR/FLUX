@@ -358,6 +358,23 @@ export class FluidSim {
     this._blit(null)
   }
 
+  clear() {
+    const gl = this.gl
+    const sim = CONFIG.SIM_RESOLUTION
+    const dye = CONFIG.DYE_RESOLUTION
+    gl.clearColor(0, 0, 0, 0)
+    for (const fbo of [this.velocity.read, this.velocity.write]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.fbo)
+      gl.viewport(0, 0, sim, sim)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+    }
+    for (const fbo of [this.dye.read, this.dye.write]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo.fbo)
+      gl.viewport(0, 0, dye, dye)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+    }
+  }
+
   splat(x, y, dx, dy, color) {
     const gl = this.gl
     gl.bindVertexArray(this.vao)

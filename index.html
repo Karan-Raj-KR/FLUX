@@ -8,17 +8,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
 
-    #camera-feed {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1); /* mirror like a selfie */
-      display: none;
-      z-index: 0;
-    }
-
     canvas {
       display: block;
       position: relative;
@@ -28,16 +17,32 @@
       cursor: none;
     }
 
-    /* When camera is visible, screen blend makes black canvas transparent */
-    canvas.camera-on {
-      mix-blend-mode: screen;
+    #camera-feed {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 10;
+      width: 180px;
+      height: 135px;
+      object-fit: cover;
+      transform: scaleX(-1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: #111;
+      display: block;
     }
 
-    #toggle-btn {
+    /* Draw mode controls — top-left */
+    #draw-controls {
       position: fixed;
       top: 16px;
       left: 16px;
       z-index: 10;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #draw-controls button {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.18);
       color: rgba(255, 255, 255, 0.85);
@@ -50,14 +55,15 @@
       backdrop-filter: blur(8px);
       transition: background 0.15s, border-color 0.15s;
     }
-    #toggle-btn:hover {
+    #draw-controls button:hover {
       background: rgba(255, 255, 255, 0.16);
       border-color: rgba(255, 255, 255, 0.3);
     }
-    #toggle-btn.active {
-      background: rgba(255, 255, 255, 0.18);
-      border-color: rgba(255, 255, 255, 0.4);
+    #draw-btn.active {
+      background: rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.5);
     }
+    #clear-btn { display: none; }
 
     #overlay {
       position: fixed;
@@ -84,17 +90,62 @@
       z-index: 10;
       transition: opacity 1s;
     }
+
+    #draw-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Finger-tip cursor dot — visible only in draw mode */
+    #finger-cursor {
+      position: fixed;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 6px rgba(255,255,255,0.6);
+      pointer-events: none;
+      z-index: 15;
+      transform: translate(-50%, -50%);
+      display: none;
+      transition: opacity 0.1s;
+    }
+
+    #clear-flash {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255, 255, 255, 0.92);
+      font-family: system-ui, sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      pointer-events: none;
+      z-index: 20;
+      opacity: 0;
+    }
   </style>
 </head>
 <body>
-  <!-- Camera feed: hidden by default, shown behind canvas when toggled -->
-  <video id="camera-feed" autoplay playsinline muted></video>
-
   <canvas id="c"></canvas>
+  <canvas id="draw-canvas"></canvas>
 
-  <button id="toggle-btn">📷 Show Camera</button>
+  <div id="draw-controls">
+    <button id="draw-btn">✏️ Draw</button>
+    <button id="clear-btn">🗑 Clear</button>
+  </div>
+
   <div id="overlay">Move your hands to paint with light</div>
   <div id="status">initializing…</div>
+  <div id="clear-flash">Canvas Cleared</div>
+  <div id="finger-cursor"></div>
+
+  <video id="camera-feed" autoplay playsinline muted></video>
 
   <!-- MediaPipe via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
